@@ -62,6 +62,8 @@ app.add_middleware(
     default_limit=settings.rate_limit_default_requests,
     chat_limit=settings.rate_limit_chat_requests,
     upload_limit=settings.rate_limit_upload_requests,
+    auth_limit=settings.rate_limit_auth_requests,
+    recovery_limit=settings.rate_limit_recovery_requests,
     inference_concurrency=settings.max_concurrent_inference_requests,
 )
 

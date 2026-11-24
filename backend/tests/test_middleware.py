@@ -30,6 +30,35 @@ class ApiGuardTests(unittest.TestCase):
         self.assertEqual(limited_response.status_code, 429)
         self.assertGreaterEqual(int(limited_response.headers["retry-after"]), 1)
 
+    def test_auth_routes_use_stricter_separate_ip_limits(self):
+        app = FastAPI()
+        app.add_middleware(
+            ApiGuardMiddleware,
+            body_limit_bytes=1024,
+            window_seconds=60,
+            default_limit=20,
+            auth_limit=2,
+            recovery_limit=1,
+        )
+
+        @app.post("/api/auth/login")
+        async def login():
+            return {"ok": True}
+
+        @app.post("/api/auth/forgot-password")
+        async def forgot_password():
+            return {"ok": True}
+
+        client = TestClient(app)
+        self.assertEqual(client.post("/api/auth/login").status_code, 200)
+        self.assertEqual(client.post("/api/auth/login").status_code, 200)
+        limited = client.post("/api/auth/login")
+        self.assertEqual(limited.status_code, 429)
+        self.assertGreaterEqual(int(limited.headers["retry-after"]), 1)
+        # A login burst must not consume the independent password-recovery bucket.
+        self.assertEqual(client.post("/api/auth/forgot-password").status_code, 200)
+        self.assertEqual(client.post("/api/auth/forgot-password").status_code, 429)
+
     def test_declared_oversized_body_is_rejected_before_endpoint(self):
         app = FastAPI()
         app.add_middleware(ApiGuardMiddleware, body_limit_bytes=4)

@@ -27,6 +27,8 @@ class ApiGuardMiddleware:
         default_limit: int = 120,
         chat_limit: int = 12,
         upload_limit: int = 10,
+        auth_limit: int = 10,
+        recovery_limit: int = 5,
         inference_concurrency: int = 2,
         clock=time.monotonic,
     ) -> None:
@@ -34,30 +36,37 @@ class ApiGuardMiddleware:
         self.body_limit_bytes = body_limit_bytes
         self.window_seconds = window_seconds
         self.limits = (default_limit, chat_limit, upload_limit)
+        self.auth_limit = auth_limit
+        self.recovery_limit = recovery_limit
         self.inference_concurrency = inference_concurrency
         self._active_inference = 0
         self.clock = clock
         self._buckets: OrderedDict[str, deque[float]] = OrderedDict()
         self._lock = asyncio.Lock()
 
-    def _limit_for(self, path: str) -> int:
+    def _limit_for(self, path: str) -> tuple[str, int] | None:
+        if path == "/api/auth/forgot-password":
+            return "recovery", self.recovery_limit
+        if path in {"/api/auth/login", "/api/auth/signup", "/api/auth/reset-password"}:
+            return "auth", self.auth_limit
         if path.startswith("/api/chat"):
-            return self.limits[1]
+            return "chat", self.limits[1]
         if path.endswith("/documents") or path.endswith("/transcribe") or path.endswith("/analyze"):
-            return self.limits[2]
-        return self.limits[0]
+            return "upload", self.limits[2]
+        return None
 
-    async def _allow(self, peer: str, limit: int) -> tuple[bool, int]:
+    async def _allow(self, peer: str, limit: int, bucket_name: str = "all") -> tuple[bool, int]:
         now = self.clock()
         cutoff = now - self.window_seconds
+        bucket_key = f"{peer}:{bucket_name}"
         async with self._lock:
-            bucket = self._buckets.setdefault(peer, deque())
+            bucket = self._buckets.setdefault(bucket_key, deque())
             while bucket and bucket[0] <= cutoff:
                 bucket.popleft()
             if len(bucket) >= limit:
                 return False, max(1, int(bucket[0] + self.window_seconds - now + 0.999))
             bucket.append(now)
-            self._buckets.move_to_end(peer)
+            self._buckets.move_to_end(bucket_key)
             while len(self._buckets) > 10_000:
                 self._buckets.popitem(last=False)
             return True, 0
@@ -90,7 +99,10 @@ class ApiGuardMiddleware:
         if scope.get("method") != "OPTIONS" and scope.get("path") != "/health":
             peer = scope.get("client")
             peer_ip = str(peer[0]) if peer else "unknown"
-            allowed, retry_after = await self._allow(peer_ip, self._limit_for(scope.get("path", "")))
+            allowed, retry_after = await self._allow(peer_ip, self.limits[0])
+            route_limit = self._limit_for(scope.get("path", ""))
+            if allowed and route_limit:
+                allowed, retry_after = await self._allow(peer_ip, route_limit[1], route_limit[0])
             if not allowed:
                 await self._send_error(send, 429, "Too many requests. Wait before trying again.", [(b"retry-after", str(retry_after).encode())])
                 return

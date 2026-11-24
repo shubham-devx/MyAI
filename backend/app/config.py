@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     rate_limit_default_requests: int = Field(default=120, ge=1, le=100_000)
     rate_limit_chat_requests: int = Field(default=12, ge=1, le=10_000)
     rate_limit_upload_requests: int = Field(default=10, ge=1, le=10_000)
+    rate_limit_auth_requests: int = Field(default=10, ge=1, le=10_000)
+    rate_limit_recovery_requests: int = Field(default=5, ge=1, le=10_000)
     max_request_body_mb: int = Field(default=128, ge=1, le=1024)
     max_concurrent_inference_requests: int = Field(default=2, ge=1, le=256)
     ollama_request_timeout_seconds: float = 120.0
