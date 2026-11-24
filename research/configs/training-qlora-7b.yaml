@@ -1,0 +1,83 @@
+# QLoRA template for a 7B-class open-weight base model.
+#
+# This file is a PLAN. The research workspace validates it and the hardware estimator
+# reads it, but nothing here starts a training run. Fill in hardware.measured only after
+# a real smoke run recorded peak VRAM, RAM, and wall-clock time.
+#
+# Before running this template on real hardware:
+#   1. python -m vsutra_research hardware --params 7 --method qlora --seq-len 2048
+#   2. python -m vsutra_research validate-dataset --dataset data/examples/instructions.jsonl
+#   3. python -m vsutra_research check-config --path configs/training-qlora-7b.yaml
+#   4. Follow docs/research-workflow.md and docs/hardware-requirements.md, including the
+#      measured smoke-run gate and evaluation evidence requirements.
+
+schema: vsutra-training-config-v1
+run_name: vsutra-qlora-7b-v0.1.0
+base_model: Qwen/Qwen2.5-7B-Instruct
+base_revision: main
+method: qlora
+
+hardware:
+  target_gpu: NVIDIA RTX 4090 (24 GB) or A5000 (24 GB)
+  gpu_count: 1
+  system_ram_gb: 32
+  storage_gb: 80
+  measured: false          # set true only after recording a real smoke run
+
+quantization:
+  type: nf4
+  compute_dtype: bf16
+  double_quant: true
+  quant_storage: uint8
+
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+  bias: none
+
+training:
+  epochs: 3
+  learning_rate: 0.0002
+  batch_size: 1
+  gradient_accumulation: 16
+  max_seq_len: 2048
+  seed: 42
+  gradient_checkpointing: true
+  warmup_ratio: 0.03
+  lr_scheduler: cosine
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_steps: 100
+  save_total_limit: 2
+  packing: false
+
+data:
+  format: vsutra-instruction-v1
+  train: data/examples/instructions.jsonl
+  validation: null
+  test: null
+  train_split: train
+  max_examples: null
+
+evaluation:
+  cases: data/examples/eval-cases.jsonl
+  min_accuracy: 0.80
+  require_no_regression: true
+  benchmark_config: configs/benchmark.yaml
+
+output:
+  dir: outputs/vsutra-qlora-7b/v0.1.0
+  adapter_name: adapter
+  push_to_hub: false
+
+notes: >
+  A single 24 GB GPU is the planning target for a 7B QLoRA run at 2048 tokens with
+  micro-batch 1 and gradient checkpointing. Confirm with a smoke run; do not trust the
+  estimate. This template is not a recommendation until the measured section is filled.

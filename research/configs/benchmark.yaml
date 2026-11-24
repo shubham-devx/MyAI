@@ -1,0 +1,27 @@
+# Benchmark template for a local Ollama endpoint.
+#
+#   python -m vsutra_research benchmark --config configs/benchmark.yaml --dry-run
+#   python -m vsutra_research benchmark --config configs/benchmark.yaml
+#
+# The dry run validates the config and prints the environment without sending requests.
+# Only successful measured requests contribute to latency and throughput numbers.
+
+schema: vsutra-benchmark-config-v1
+prompts: data/examples/benchmark-prompts.jsonl
+output_dir: reports/benchmark
+repeats: 3
+warmup: 1
+max_tokens: 256
+temperature: 0
+seed: 42
+
+backend:
+  kind: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen2.5:7b-instruct
+  timeout_seconds: 180
+
+notes: >
+  Compare runs only when the machine, server build, model, quantization, prompt set,
+  max_tokens, and concurrency are identical. A faster number from a different setting is
+  not a regression or an improvement.

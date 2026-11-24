@@ -1,0 +1,33 @@
+# Evaluation template. Scores real model responses against data/examples/eval-cases.jsonl.
+#
+# Offline scoring (no model calls):
+#   python -m vsutra_research evaluate --config configs/eval.yaml \
+#       --predictions outputs/predictions.jsonl --label baseline
+#
+# Live scoring against a running backend:
+#   python -m vsutra_research evaluate --config configs/eval.yaml
+#
+# Run from the research/ directory so relative paths resolve.
+
+schema: vsutra-eval-config-v1
+dataset: data/examples/eval-cases.jsonl
+output_dir: reports/eval
+
+backend:
+  kind: ollama                     # openai | ollama | vsutra | none
+  base_url: http://127.0.0.1:11434
+  model: qwen2.5:7b-instruct
+  temperature: 0
+  max_tokens: 512
+  timeout_seconds: 180
+  seed: 42
+
+thresholds:
+  # Informational only: the CLI reports accuracy but does not gate automatically.
+  min_accuracy: 0.80
+  max_backend_error_rate: 0.02
+
+notes: >
+  Automated cases are exact, contains, not_contains, regex, json_schema, and tool_call.
+  Rubric cases are marked manual and excluded from the automatic accuracy denominator.
+  Keep temperature at 0 for comparisons; if you raise it, record the seed and run repeats.

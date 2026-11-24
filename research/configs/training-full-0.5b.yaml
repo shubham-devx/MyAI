@@ -1,0 +1,60 @@
+# Full fine-tuning template for a small (0.5B-class) open-weight model.
+#
+# Full fine-tuning updates every parameter and stores full gradients, AdamW state, and full
+# checkpoints. It is the most memory- and storage-expensive option and is included mainly as
+# a comparison baseline. For anything above roughly 1B parameters, prefer LoRA or QLoRA.
+#
+# This file is a PLAN. Nothing in the research workspace starts a run from it.
+
+schema: vsutra-training-config-v1
+run_name: vsutra-full-0.5b-v0.1.0
+base_model: Qwen/Qwen2.5-0.5B-Instruct
+base_revision: main
+method: full
+
+hardware:
+  target_gpu: NVIDIA GPU with at least 24 GB VRAM (planning target; measure before use)
+  gpu_count: 1
+  system_ram_gb: 32
+  storage_gb: 80
+  measured: false
+
+training:
+  epochs: 3
+  learning_rate: 0.00002
+  batch_size: 2
+  gradient_accumulation: 16
+  max_seq_len: 1024
+  seed: 42
+  gradient_checkpointing: true
+  warmup_ratio: 0.03
+  lr_scheduler: cosine
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_steps: 100
+  save_total_limit: 3
+  packing: false
+
+data:
+  format: vsutra-instruction-v1
+  train: data/examples/instructions.jsonl
+  validation: null
+  test: null
+  train_split: train
+  max_examples: null
+
+evaluation:
+  cases: data/examples/eval-cases.jsonl
+  min_accuracy: 0.85
+  require_no_regression: true
+  benchmark_config: configs/benchmark.yaml
+
+output:
+  dir: outputs/vsutra-full-0.5b/v0.1.0
+  push_to_hub: false
+
+notes: >
+  Provisional planning target: 24 GB GPU VRAM, 32 GB system RAM, and 80 GB free storage.
+  Read docs/hardware-requirements.md and measure a smoke run before treating this as a
+  recommendation. Full fine-tuning is a comparison baseline, not the default plan.

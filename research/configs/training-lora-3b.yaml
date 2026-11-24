@@ -1,0 +1,74 @@
+# LoRA template for a 3B-class open-weight base model.
+#
+# LoRA keeps frozen base weights in bf16 and trains low-rank adapters. It needs more VRAM
+# than QLoRA for the same model, but avoids quantization and usually trains faster per step.
+#
+# This file is a PLAN. Nothing in the research workspace starts a run from it.
+
+schema: vsutra-training-config-v1
+run_name: vsutra-lora-3b-v0.1.0
+base_model: HuggingFaceTB/SmolLM2-1.7B-Instruct
+base_revision: main
+method: lora
+
+hardware:
+  target_gpu: NVIDIA RTX 3090 (24 GB) or A10 (24 GB)
+  gpu_count: 1
+  system_ram_gb: 32
+  storage_gb: 60
+  measured: false
+
+lora:
+  rank: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  bias: none
+
+training:
+  epochs: 3
+  learning_rate: 0.0001
+  batch_size: 2
+  gradient_accumulation: 8
+  max_seq_len: 2048
+  seed: 42
+  gradient_checkpointing: true
+  warmup_ratio: 0.03
+  lr_scheduler: cosine
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_steps: 100
+  save_total_limit: 2
+  packing: false
+
+data:
+  format: vsutra-instruction-v1
+  train: data/examples/instructions.jsonl
+  validation: null
+  test: null
+  train_split: train
+  max_examples: null
+
+evaluation:
+  cases: data/examples/eval-cases.jsonl
+  min_accuracy: 0.80
+  require_no_regression: true
+  benchmark_config: configs/benchmark.yaml
+
+output:
+  dir: outputs/vsutra-lora-3b/v0.1.0
+  adapter_name: adapter
+  push_to_hub: false
+
+notes: >
+  LoRA at rank 32 over all linear projections is a reasonable starting point for a 1.5-3B
+  model on one 24 GB GPU. If VRAM is tight, switch to the QLoRA template instead of
+  silently lowering sequence length, because sequence length changes the training signal.

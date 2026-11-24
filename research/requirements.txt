@@ -1,0 +1,4 @@
+# Core workspace dependencies. Heavy training frameworks (PyTorch, Transformers, PEFT,
+# bitsandbytes, TRL, Accelerate) belong in a separate training environment, not here.
+PyYAML>=6.0
+httpx>=0.27

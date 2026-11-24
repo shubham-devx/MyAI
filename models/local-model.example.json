@@ -1,0 +1,7 @@
+{
+  "provider": "ollama",
+  "model": "llama3.2",
+  "baseUrl": "http://localhost:11434",
+  "streaming": true,
+  "notes": "Copy these values to backend/.env. Keep model weights in Ollama's local model store, outside this repository."
+}

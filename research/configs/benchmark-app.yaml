@@ -1,0 +1,32 @@
+# Benchmark template that measures the main V-Sutra backend through its own SSE route.
+#
+# Start the backend first (from the repository root):
+#   .\backend\venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+#
+# Then, from research/:
+#   python -m vsutra_research benchmark --config configs/benchmark-app.yaml --dry-run
+#   python -m vsutra_research benchmark --config configs/benchmark-app.yaml
+#
+# This measures the whole application path, including its own provider calls, so numbers
+# are not comparable with a direct Ollama benchmark. Record which config produced a report.
+
+schema: vsutra-benchmark-config-v1
+prompts: data/examples/benchmark-prompts.jsonl
+output_dir: reports/benchmark
+repeats: 2
+warmup: 1
+max_tokens: 256
+temperature: 0
+seed: 42
+
+backend:
+  kind: vsutra
+  base_url: http://127.0.0.1:8000
+  model: qwen2.5:7b-instruct
+  timeout_seconds: 240
+  enabled_tools: []
+
+notes: >
+  V-Sutra's chat route does not accept a sampling seed, so seed is ignored for this
+  backend. Keep enabled_tools empty for a text-latency baseline; tool-enabled runs measure
+  a different workload.

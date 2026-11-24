@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://v-sutra.local/schemas/benchmark-prompt.schema.json",
+  "title": "V-Sutra benchmark prompt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["prompt"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "prompt": {"type": "string", "minLength": 1, "maxLength": 12000},
+    "system": {"type": "string", "maxLength": 4000}
+  }
+}

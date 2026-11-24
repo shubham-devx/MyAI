@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://v-sutra.local/schemas/instruction.schema.json",
+  "title": "V-Sutra instruction example",
+  "description": "One JSONL training example for supervised instruction tuning. Content is untrusted data and never executed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "source", "license", "language", "messages", "metadata"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$",
+      "description": "Stable lowercase identifier, unique within a dataset."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120,
+      "description": "Human-readable provenance, for example internal-authoring or public-domain."
+    },
+    "license": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 200,
+      "description": "License or usage right for this example."
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Za-z0-9]{2,8})?$",
+      "description": "Primary language tag such as en or en-US."
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 date or timestamp for provenance."
+    },
+    "split": {
+      "type": "string",
+      "enum": ["train", "validation", "test"]
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 32}
+    },
+    "messages": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 24,
+      "items": {"$ref": "#/$defs/message"}
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["verified"],
+      "properties": {
+        "verified": {"type": "boolean"},
+        "reviewer": {"type": "string", "maxLength": 80},
+        "difficulty": {"type": "string", "enum": ["easy", "medium", "hard"]},
+        "notes": {"type": "string", "maxLength": 1000},
+        "schema_version": {"const": "vsutra-instruction-v1"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "content"],
+      "properties": {
+        "role": {"type": "string", "enum": ["system", "user", "assistant", "tool"]},
+        "content": {"type": "string", "maxLength": 32000},
+        "tool_calls": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {"$ref": "#/$defs/tool_call"}
+        },
+        "tool_call_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "name": {"type": "string", "minLength": 1, "maxLength": 64}
+      }
+    },
+    "tool_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "arguments"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "name": {"type": "string", "minLength": 1, "maxLength": 64},
+        "arguments": {"type": "object"}
+      }
+    }
+  }
+}
