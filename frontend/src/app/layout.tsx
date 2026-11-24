@@ -13,8 +13,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="overflow-hidden">
-        <div className="flex h-screen flex-col">
+      <body className="app-body">
+        <div className="app-frame">
           {children}
         </div>
       </body>
